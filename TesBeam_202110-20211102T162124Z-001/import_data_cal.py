@@ -161,7 +161,7 @@ for i in range(8):
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d %b, %H:%M'))
     ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
     
-    plt.ylim(5, 15)
+    #plt.ylim(5, 15)
     
     plt.legend()
     
