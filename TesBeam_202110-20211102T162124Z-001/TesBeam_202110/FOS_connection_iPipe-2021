@@ -1,0 +1,9 @@
+FOS connection iPipe - 2021 (edited 2021.10.28.)
+
+Interrogator ch		Name				Peak#			Array names	
+1.1					Central beampipe	11+11 peaks		1-1-1 (horizontal) and 2-1-1 (top)
+2.1					Endcap minus		8+8 peaks		Sensor 3-1 (far - in gap of pads) and Sensor 4-1 (near)
+3.1					Endcap plus			8+8 peaks		Sensor 3-2 (near - in gap of pads) and Sensor 4-2 (far)
+4.1					HF-CT2 plus			9+9 peaks		Sensor 2-1 (top) and Sensor 1-1 (side gap of pads in conical part)
+1.2					HF-CT2 minus		9+9 peaks		Sensor 2-2 (top) and Sensor 1-2 (side gap of pads in conical part)
+
