@@ -33,28 +33,43 @@ plt.style.use('ggplot')
 # endcap minus 
 cal_file = 'output_file.csv'
 
+# Setting this index we can choose the cal parameter we want to use
+reg_type = 2
+
+# reg_type = 0 --> ordinary linear regression on scattered data
+# reg_type = 1 --> ordinary linear regression on filtered data
+# reg_type = 2 --> ODR on filtered data
+
+# We need to have an index to select the right column
+col_index = 3 - reg_type
+if reg_type == 0:
+    col_index = 0
+
 cal_data = pd.read_csv(cal_file, 
-                 index_col = (0)) # Indexes are the dates
+                 index_col = reg_type)
 
 # Here I want to store all the intercept 
 slope_scatter = []
 intercept_scatter = []
+slope_var_scatter = []
+intercept_var_scatter = []
 
 for index in range(len(cal_data.columns)):
-    if index % 3 == 0:
+    if index % 3 == col_index:
         slope_scatter.append(cal_data.iloc[0,index])
         intercept_scatter.append(cal_data.iloc[1,index])
-    
-
+        slope_var_scatter.append(cal_data.iloc[2,index])
+        intercept_var_scatter.append(cal_data.iloc[3,index])
 
 # %% Importing data
-# The firs number in the txt file, tells how many rows to jump before we have any
+# The first number in the txt file, tells how many rows to jump before we have any
 # actual infromation, so we get it as an int
 
 # Folder where all the files are
 folder = 'TesBeam_202110'
 # Very bad practice
-outputs = pd.DataFrame()
+Temperatures = pd.DataFrame()
+Errors = pd.DataFrame()
 
 # Getting a list with the name of all the files
 f = []
@@ -99,23 +114,28 @@ for index, value in enumerate(f):
         
         # First define the matrix of the right size
         array = np.zeros((df.shape[0], df.iloc[0,col_num_channel-1]))
+        sigma_T = np.zeros((df.shape[0], df.iloc[0,col_num_channel-1]))
         # I would like to see all the data togheter
         
         # Filling the array
         for i in range(0,int(df.iloc[0,col_num_channel-1]/2)):
             # I will be taking one column each 4
+            # This is the array of temperatures
             array[:,i] = (df.iloc[:,(first_column+4*i)]-intercept_scatter[i])/slope_scatter[i]
             
-            # array[:,i] = df.iloc[:,(first_column+2*i)]
-            
-            
-        # Now before exporting everything I should convert to temperatures using
-        # the cal curve obtained
+            # I need to have the relative uncertainty on each point
+            sigma_T[:,i] = array[:,i]*(slope_var_scatter[i]/slope_scatter[i] + 
+                                       intercept_var_scatter[i]/intercept_scatter[i])
+                        
             
         data = pd.DataFrame(array)
-        
         data.index = df.index
-        outputs = outputs.append(data)    
+        
+        sigma = pd.DataFrame(sigma_T)
+        sigma.index = df.index
+        
+        Temperatures = Temperatures.append(data)
+        Errors = Errors.append(sigma)
 
 # outputs.index = pd.to_datetime(outputs.index)        
 # outputs = outputs.sort_index(axis=0, ascending=False)
@@ -129,18 +149,27 @@ for i in range(8):
     ax = plt.axes() # Create a new set of axes
     
     
-    plt.plot(outputs.index, outputs.iloc[:,i], label = f'4.1_{i+1}', linewidth=0.5)
+    plt.plot(Temperatures.index, Temperatures.iloc[:,i], label = f'4.1_{i+1}', linewidth=0.5)
     plt.xticks(rotation=-90, style='normal') # Rotate the ticks for readability
+    
+    plt.fill_between(Temperatures.index, 
+                     Temperatures.iloc[:,i]-3*Errors.iloc[:,i], 
+                     Temperatures.iloc[:,i]+3*Errors.iloc[:,i],
+                     color='gray', alpha=0.2)
     
     # Get rid of scienfic notation only on y axes
     ax.xaxis.set_major_formatter(mdates.DateFormatter('%d %b, %H:%M'))
     ax.yaxis.set_major_formatter(ScalarFormatter(useOffset=False))
     
-    #plt.ylim(1527.4, 1527.5)
+    plt.ylim(5, 15)
     
     plt.legend()
     
-    plt.title('Temperature')
+    titles = ['Calibration from scattered data',
+              'Calibration from filtered data',
+              'Calibration with ODR']
+    
+    plt.title(f'Temperature, {titles[reg_type]}')
     plt.xlabel('Date')
     plt.ylabel(r'T ($^\circ C$)')
     

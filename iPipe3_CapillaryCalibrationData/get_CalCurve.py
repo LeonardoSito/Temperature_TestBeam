@@ -34,12 +34,12 @@ from scipy import signal
 # Defining a style to use in the whole document
 plt.style.use('ggplot')
 
-# %% What I need to declare for output
+# %% Input/Output Declarations
 indexes_out = ['Slope', 'Intercept', 'Slope error', 'Intercept error']
 outputs = pd.DataFrame()
 
 # Sweep on the number of sensors
-sn = 1
+sn = 8
 file_names = np.linspace(1,sn,sn)
 
 # %% Importing data and cleaning
@@ -72,7 +72,7 @@ for file_num in file_names:
     
     # %%%% 0. Linear Fit
     
-    fit_data_0 = np.polyfit(data.iloc[:,3], data.iloc[:,0], 1, cov = 'unscaled')
+    fit_data_0 = np.polyfit(data.iloc[:,3], data.iloc[:,0], 1, cov = True)
     
     line_0 = fit_data_0[0] # Slope and intercept
     cov_matrix_0 = fit_data_0[1] # Covariance Matrix
@@ -126,7 +126,7 @@ for file_num in file_names:
     
     # %%%% 1. Linear fit of means from numpy
     
-    fit_data_1 = np.polyfit(mu_T, mu_lambda, 1, cov = 'unscaled')
+    fit_data_1 = np.polyfit(mu_T, mu_lambda, 1, cov = True)
     
     line_1 = fit_data_1[0]
     cov_matrix_1 = fit_data_1[1]
@@ -135,10 +135,12 @@ for file_num in file_names:
     # b1, a1, r_value, p_value, std_err = stats.linregress(mu_T, mu_lambda)
     
     # %%%% 3. Linear fit weighed - Deming regression
+    
         # https://docs.scipy.org/doc/scipy/reference/odr.html
         # P. T. Boggs and J. E. Rogers, “Orthogonal Distance Regression,” in “Statistical analysis of measurement error models and applications: proceedings of the AMS-IMS-SIAM joint summer research conference held June 10-16, 1989,” Contemporary Mathematics, vol. 112, pg. 186, 1990.
         # Define a function (quadratic in our case) to fit the data with.
         # https://towardsdatascience.com/error-in-variables-models-deming-regression-11ca93b6e138
+        
     def f(B, x):
         '''Linear function y = m*x + b'''
         # B is a vector of the parameters.
@@ -179,14 +181,13 @@ for file_num in file_names:
               label = "Linear fit", color = '#003f5c', 
               linewidth=0.5)
     
-    # %%%% Third order fit 
+    # %%%% 4. Third order fit 
     coeff_third = np.polyfit(mu_T, mu_lambda, 3)
     
     # %%%% Plot third order fit
     plt.plot(mu_T, (coeff_third[0]*(mu_T)**3 + coeff_third[1]*(mu_T)**2 + coeff_third[2]*mu_T + coeff_third[3]), 
               label = "Thrid order fit", color = '#a05195', 
               linewidth=0.5)
-    
     
     # %%%% Plot over the previous result
     plt.plot(data.iloc[:,3], (line_0[1] + line_0[0]*data.iloc[:,3]), 
@@ -204,7 +205,8 @@ for file_num in file_names:
     plt.xlabel(r'T ($^\circ$C)')
     plt.ylabel(r'$\lambda$ (nm)')
     
-    plt.savefig(results_dir + '\CalCurve_1.png', dpi=600, bbox_inches = 'tight')
+    # Don't need to save figure
+    # plt.savefig(results_dir + '\CalCurve_1.png', dpi=600, bbox_inches = 'tight')
     
     # %% Outputs [Slope, Intercept, Slope error, Intercept error]
     
@@ -212,9 +214,10 @@ for file_num in file_names:
         #"outputs": ['Slope', 'Intercept', 'Slope error', 'Intercept error'],
         f"scatter_results_{file_num}": [line_0[0], line_0[1], np.sqrt(cov_matrix_0[0,0]), np.sqrt(cov_matrix_0[1,1])],
         f"filtered_results_{file_num}": [line_1[0], line_1[1], np.sqrt(cov_matrix_1[0,0]), np.sqrt(cov_matrix_1[1,1])],
-        f"filtered_results_ODR_{file_num}": [myoutput.beta[0], myoutput.beta[1], slope_std_err, intercept_std_err]   
+        f"ODR_{file_num}": [myoutput.beta[0], myoutput.beta[1], slope_std_err, intercept_std_err]   
     }
-    
+
+    # It is not good to grow a dataframe (try to define it before)    
     DataFrame = pd.DataFrame(dictionary)
     
     outputs = pd.concat([outputs, DataFrame], axis=1)
@@ -224,4 +227,4 @@ for file_num in file_names:
 outputs.index = indexes_out
 outputs.to_csv('output_file.csv')
 
-# Sistemare bande di errore e deviazione standard
+# Give it more clear names
